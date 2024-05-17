@@ -1,7 +1,9 @@
 from django.urls import path
-from .views import get_odoo_data
+from .views import get_products, get_product_by_id, update_product, delete_product
 
 urlpatterns = [
-    path('api/products/', get_odoo_data, name='get_odoo_data'),
-    # Add more endpoints here as needed
+    path('api/products/', get_products, name='get_products'),
+    path('api/products/<int:product_id>/', get_product_by_id, name='get_product_by_id'),
+    path('api/products/<int:product_id>/update/', update_product, name='update_product'),
+    path('api/products/<int:product_id>/delete/', delete_product, name='delete_product')
 ]
