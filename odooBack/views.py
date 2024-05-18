@@ -21,11 +21,10 @@ def get_products(request):
         # Fetching products from Odoo
         product_ids = models.execute_kw(db, uid, password, 'product.template', 'search', [[]])
         products = models.execute_kw(db, uid, password, 'product.template', 'read', [product_ids],
-                                     {'fields': ['id', 'name', 'list_price']})
+                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty']})
 
         # Serialize data
-        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price']} for
-                               product in products]
+        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code']} for product in products]
 
         return JsonResponse(serialized_products, safe=False)
     else:
@@ -41,6 +40,33 @@ def get_product_by_id(request, product_id):
             return JsonResponse(product[0], safe=False)
         else:
             return JsonResponse({'error': 'Product not found'}, status=404)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@csrf_exempt
+def add_product(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+        except json.JSONDecodeError:
+            return HttpResponseBadRequest('Invalid JSON')
+
+        fields = {}
+        if 'name' in data:
+            fields['name'] = data['name']
+        if 'list_price' in data:
+            fields['list_price'] = data['list_price']
+
+        if fields:
+            try:
+                product_id = models.execute_kw(db, uid, password, 'product.template', 'create', [fields])
+                cache.delete('products')  # Invalidate the cache for the product list
+                return JsonResponse({'success': 'Product added successfully', 'product_id': product_id})
+            except Exception as e:
+                return JsonResponse({'error': str(e)}, status=400)
+        else:
+            return JsonResponse({'error': 'No valid fields to create'}, status=400)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
