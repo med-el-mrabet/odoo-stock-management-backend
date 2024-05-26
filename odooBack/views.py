@@ -21,10 +21,10 @@ def get_products(request):
         # Fetching products from Odoo
         product_ids = models.execute_kw(db, uid, password, 'product.template', 'search', [[]])
         products = models.execute_kw(db, uid, password, 'product.template', 'read', [product_ids],
-                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty', 'detailed_type']})
+                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty', 'detailed_type', 'categ_id']})
 
         # Serialize data
-        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code'],'detailed_type': product['detailed_type']} for product in products]
+        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code'],'detailed_type': product['detailed_type'], 'categ_id': product['categ_id']} for product in products]
 
         return JsonResponse(serialized_products, safe=False)
     else:
