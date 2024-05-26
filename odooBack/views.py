@@ -21,10 +21,10 @@ def get_products(request):
         # Fetching products from Odoo
         product_ids = models.execute_kw(db, uid, password, 'product.template', 'search', [[]])
         products = models.execute_kw(db, uid, password, 'product.template', 'read', [product_ids],
-                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty', 'detailed_type', 'categ_id']})
+                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty', 'detailed_type', 'categ_id', 'sale_ok', 'purchase_ok']})
 
         # Serialize data
-        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code'],'detailed_type': product['detailed_type'], 'categ_id': product['categ_id']} for product in products]
+        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code'],'detailed_type': product['detailed_type'], 'categ_id': product['categ_id'],'purchase_ok': product['purchase_ok'],'sale_ok': product['sale_ok']} for product in products]
 
         return JsonResponse(serialized_products, safe=False)
     else:
@@ -49,24 +49,22 @@ def add_product(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return HttpResponseBadRequest('Invalid JSON')
-
-        fields = {}
-        if 'name' in data:
-            fields['name'] = data['name']
-        if 'list_price' in data:
-            fields['list_price'] = data['list_price']
-
-        if fields:
-            try:
-                product_id = models.execute_kw(db, uid, password, 'product.template', 'create', [fields])
-                cache.delete('products')  # Invalidate the cache for the product list
-                return JsonResponse({'success': 'Product added successfully', 'product_id': product_id})
-            except Exception as e:
-                return JsonResponse({'error': str(e)}, status=400)
-        else:
-            return JsonResponse({'error': 'No valid fields to create'}, status=400)
+            # Set fields that are allowed during creation
+            product_data = {
+                'name': data.get('name'),
+                'default_code': data.get('default_code'),
+                'list_price': data.get('list_price'),
+                'standard_price': data.get('standard_price'),
+                'qty_available': data.get('qty_available'),
+                'categ_id': data.get('categ_id'),
+                'detailed_type': data.get('detailed_type', 'product'),  # default to 'product'
+                'sale_ok': data.get('sale_ok', True),
+                'purchase_ok': data.get('purchase_ok', True),
+            }
+            product_id = models.execute_kw(db, uid, password, 'product.template', 'create', [product_data])
+            return JsonResponse({'product_id': product_id}, status=201)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
