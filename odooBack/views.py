@@ -21,10 +21,10 @@ def get_products(request):
         # Fetching products from Odoo
         product_ids = models.execute_kw(db, uid, password, 'product.template', 'search', [[]])
         products = models.execute_kw(db, uid, password, 'product.template', 'read', [product_ids],
-                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty']})
+                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty', 'detailed_type']})
 
         # Serialize data
-        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code']} for product in products]
+        serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code'],'detailed_type': product['detailed_type']} for product in products]
 
         return JsonResponse(serialized_products, safe=False)
     else:
@@ -114,5 +114,21 @@ def archive_product(request, product_id):
             return JsonResponse({'success': 'Product archived successfully'})
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+
+def get_product_categories(request):
+    if request.method == 'GET':
+        # Fetching products from Odoo
+        categories_ids = models.execute_kw(db, uid, password, 'product.category', 'search', [[]])
+        categories = models.execute_kw(db, uid, password, 'product.category', 'read', [categories_ids],
+                                    {'fields': ['id', 'name','complete_name','display_name', 'parent_id', 'parent_path', 'child_id', 'create_date',  'property_cost_method']})
+
+        # Serialize data
+        serialized_categories = [{'id': categorie['id'], 'name': categorie['name'], 'complete_name': categorie['complete_name'], 'display_name': categorie['display_name'], 'parent_id': categorie['parent_id'],  'parent_path': categorie['parent_path'], 'child_id': categorie['child_id'],'create_date': categorie['create_date'], 'property_cost_method': categorie['property_cost_method']} for categorie in categories]
+
+        return JsonResponse(serialized_categories, safe=False)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
