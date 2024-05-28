@@ -55,18 +55,16 @@ def add_product(request):
                 'default_code': data.get('default_code'),
                 'list_price': data.get('list_price'),
                 'standard_price': data.get('standard_price'),
-                'qty_available': data.get('qty_available'),
-                'categ_id': data.get('categ_id'),
+                'categ_id': data.get('categ_id', 1),
                 'detailed_type': data.get('detailed_type', 'product'),  # default to 'product'
                 'sale_ok': data.get('sale_ok', True),
                 'purchase_ok': data.get('purchase_ok', True),
             }
+            print(product_data)
             product_id = models.execute_kw(db, uid, password, 'product.template', 'create', [product_data])
             return JsonResponse({'product_id': product_id}, status=201)
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
-    else:
-        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 @csrf_exempt

@@ -9,5 +9,5 @@ urlpatterns = [
     path('api/products/add/', add_product, name='add_product'),
 
 
-    path('api/products/categories', get_product_categories, name='get_product_categories'),
+    path('api/products/categories/', get_product_categories, name='get_product_categories'),
 ]

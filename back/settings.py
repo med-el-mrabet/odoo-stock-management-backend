@@ -128,3 +128,5 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # Add your React development server address
     # Add other origins as needed for production
 ]
+
+
