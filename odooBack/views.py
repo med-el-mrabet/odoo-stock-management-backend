@@ -19,17 +19,13 @@ models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
 
 # Fetching products from Odoo
 product_ids = models.execute_kw(db, uid, password, 'product.template', 'search', [[]])
-products = models.execute_kw(db, uid, password, 'product.template', 'read', [product_ids],
-                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty', 'detailed_type', 'categ_id', 'sale_ok', 'purchase_ok']})
-
-        # Serialize data
-serialized_products = [{'id': product['id'], 'name': product['name'], 'list_price': product['list_price'], 'standard_price': product['standard_price'], 'qty_available': product['qty_available'],  'outgoing_qty': product['outgoing_qty'], 'incoming_qty': product['incoming_qty'],'default_code': product['default_code'],'detailed_type': product['detailed_type'], 'categ_id': product['categ_id'],'purchase_ok': product['purchase_ok'],'sale_ok': product['sale_ok']} for product in products]
+products = models.execute_kw(db, uid, password, 'product.template', 'read', [product_ids])
 
 @csrf_exempt
 def get_products(request):
     if request.method == 'GET':
 
-        return JsonResponse(serialized_products, safe=False)
+        return JsonResponse(products, safe=False)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
@@ -129,5 +125,42 @@ def get_product_categories(request):
     if request.method == 'GET':
         
         return JsonResponse(serialized_categories, safe=False)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+
+#all_moves
+move_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
+moves = models.execute_kw(db, uid, password, 'stock.picking', 'read', [move_ids])
+
+
+@csrf_exempt
+def get_moves(request):
+    if request.method == 'GET':
+        return JsonResponse(moves, safe=False)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+
+
+receipts = [move for move in moves if move['picking_type_id'][0] == 1]
+
+@csrf_exempt
+def get_receipts(request):
+    if request.method == 'GET':
+        
+        return JsonResponse(receipts, safe=False)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+
+delivery_orders = [move for move in moves if move['picking_type_id'][0] == 2]
+
+@csrf_exempt
+def get_delivery_orders(request):
+    if request.method == 'GET':
+        
+        return JsonResponse(delivery_orders, safe=False)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
