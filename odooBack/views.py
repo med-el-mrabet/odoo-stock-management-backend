@@ -33,8 +33,7 @@ def get_products(request):
 def get_product_by_id(request, product_id):
     if request.method == 'GET':
         # Fetching product by ID from Odoo
-        product = models.execute_kw(db, uid, password, 'product.template', 'read', [[product_id]],
-                                    {'fields': ['id','default_code', 'name', 'list_price', 'standard_price', 'qty_available',  'outgoing_qty', 'incoming_qty', 'detailed_type', 'categ_id', 'sale_ok', 'purchase_ok']})
+        product = models.execute_kw(db, uid, password, 'product.template', 'read', [[product_id]])
         if product:
             return JsonResponse(product[0], safe=False)
         else:
