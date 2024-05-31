@@ -24,7 +24,6 @@ products = models.execute_kw(db, uid, password, 'product.template', 'read', [pro
 @csrf_exempt
 def get_products(request):
     if request.method == 'GET':
-
         return JsonResponse(products, safe=False)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
