@@ -128,21 +128,36 @@ def get_product_categories(request):
 
 
 
-#all_moves
-move_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
-moves = models.execute_kw(db, uid, password, 'stock.picking', 'read', [move_ids])
 
 
 @csrf_exempt
 def get_moves(request):
     if request.method == 'GET':
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        move_ids = models.execute_kw(db, uid, password, 'stock.move', 'search', [[]])
+        moves = models.execute_kw(db, uid, password, 'stock.move', 'read', [move_ids])
         return JsonResponse(moves, safe=False)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+#all_moves
+pickings_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
+pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
+
+
+@csrf_exempt
+def get_pickings(request):
+    if request.method == 'GET':
+        return JsonResponse(pickings, safe=False)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
 
 
-receipts = [move for move in moves if move['picking_type_id'][0] == 1]
+receipts = [move for move in pickings if move['picking_type_id'][0] == 1]
 
 @csrf_exempt
 def get_receipts(request):
@@ -153,12 +168,48 @@ def get_receipts(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
 
-delivery_orders = [move for move in moves if move['picking_type_id'][0] == 2]
+
 
 @csrf_exempt
 def get_delivery_orders(request):
     if request.method == 'GET':
-        
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        pickings_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
+        pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
+        delivery_orders = [picking for picking in pickings if picking['picking_type_id'][0] == 2]        
         return JsonResponse(delivery_orders, safe=False)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+
+@csrf_exempt
+def change_delivery_order_state(request, order_id, new_state):
+    if request.method == 'POST':
+        try:
+            common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+            uid = common.authenticate(db, username, password, {})
+            models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+
+            if new_state not in ['confirmed', 'done', 'cancel']:
+                return JsonResponse({'error': 'Invalid state'}, status=400)
+
+            # Fetch the delivery order by ID
+            delivery_order = models.execute_kw(db, uid, password, 'stock.picking', 'read', [[order_id]])
+            if not delivery_order:
+                return JsonResponse({'error': 'Delivery order not found'}, status=404)
+
+            # Call the appropriate method based on the desired state
+            if new_state == 'confirmed':
+                models.execute_kw(db, uid, password, 'stock.picking', 'action_confirm', [[order_id]])
+            elif new_state == 'done':
+                models.execute_kw(db, uid, password, 'stock.picking', 'button_validate', [[order_id]])
+            elif new_state == 'cancel':
+                models.execute_kw(db, uid, password, 'stock.picking', 'action_cancel', [[order_id]])
+
+            return JsonResponse({'message': 'State updated successfully'})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
