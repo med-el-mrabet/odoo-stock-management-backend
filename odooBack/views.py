@@ -144,19 +144,24 @@ def get_moves(request):
 
 
 #all_moves
-pickings_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
-pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
+
 
 
 @csrf_exempt
 def get_pickings(request):
     if request.method == 'GET':
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        pickings_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
+        pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
         return JsonResponse(pickings, safe=False)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
 
-
+pickings_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
+pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
 receipts = [move for move in pickings if move['picking_type_id'][0] == 1]
 
 @csrf_exempt
@@ -180,6 +185,20 @@ def get_delivery_orders(request):
         pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
         delivery_orders = [picking for picking in pickings if picking['picking_type_id'][0] == 2]        
         return JsonResponse(delivery_orders, safe=False)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+    
+@csrf_exempt
+def get_order_by_id(request, order_id):
+    if request.method == 'GET':
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        order = models.execute_kw(db, uid, password, 'stock.picking', 'read', [[order_id]])
+        if order:
+            return JsonResponse(order[0], safe=False)
+        else:
+            return JsonResponse({'error': 'Product not found'}, status=404)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
