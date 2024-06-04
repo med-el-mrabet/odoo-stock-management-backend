@@ -143,7 +143,45 @@ def get_moves(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
-#all_moves
+@csrf_exempt
+def get_move_by_id(request, move_id):
+    if request.method == 'GET':
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        move = models.execute_kw(db, uid, password, 'stock.picking', 'read', [[move_id]])
+        if move:
+            return JsonResponse(move[0], safe=False)
+        else:
+            return JsonResponse({'error': 'Product not found'}, status=404)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
+
+
+@csrf_exempt
+def get_moves_by_ids(request):
+    if request.method == 'GET':
+        # Extract IDs from request parameters
+        ids = request.GET.getlist('ids')
+        if not ids:
+            return JsonResponse({'error': 'No IDs provided'}, status=400)
+        
+        try:
+            ids = list(map(int, ids))  # Convert to list of integers
+            common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+            uid = common.authenticate(db, username, password, {})
+            models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+
+            # Fetch the moves by IDs
+            moves = models.execute_kw(db, uid, password, 'stock.move', 'read', [ids])
+            if moves:
+                return JsonResponse(moves, safe=False)
+            else:
+                return JsonResponse({'error': 'No moves found for the provided IDs'}, status=404)
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    else:
+        return JsonResponse({'error': 'Method not allowed'}, status=405)
 
 
 
