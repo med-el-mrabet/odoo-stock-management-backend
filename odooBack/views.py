@@ -91,6 +91,8 @@ def update_product(request, product_id):
 def delete_product(request, product_id):
     if request.method == 'DELETE':
         models.execute_kw(db, uid, password, 'product.template', 'unlink', [[product_id]])
+        # Remove the deleted product from the products list
+        products = [product for product in products if product['id'] != product_id]
         return JsonResponse({'success': 'Product deleted successfully'})
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
