@@ -90,9 +90,10 @@ def update_product(request, product_id):
 @csrf_exempt
 def delete_product(request, product_id):
     if request.method == 'DELETE':
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
         models.execute_kw(db, uid, password, 'product.template', 'unlink', [[product_id]])
-        # Remove the deleted product from the products list
-        products = [product for product in products if product['id'] != product_id]
         return JsonResponse({'success': 'Product deleted successfully'})
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
@@ -200,20 +201,23 @@ def get_pickings(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
 
-pickings_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
-pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
-receipts = [move for move in pickings if move['picking_type_id'][0] == 1]
+
+
 
 @csrf_exempt
 def get_receipts(request):
     if request.method == 'GET':
+        common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
+        uid = common.authenticate(db, username, password, {})
+        models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
+        pickings_ids = models.execute_kw(db, uid, password, 'stock.picking', 'search', [[]])
+        pickings = models.execute_kw(db, uid, password, 'stock.picking', 'read', [pickings_ids])
+        receipts = [move for move in pickings if move['picking_type_id'][0] == 1]
         
         return JsonResponse(receipts, safe=False)
     else:
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
-
-
 
 @csrf_exempt
 def get_delivery_orders(request):
@@ -229,14 +233,14 @@ def get_delivery_orders(request):
         return JsonResponse({'error': 'Method not allowed'}, status=405)
     
 @csrf_exempt
-def get_order_by_id(request, order_id):
+def get_pickings_by_id(request, pick_id):
     if request.method == 'GET':
         common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
         uid = common.authenticate(db, username, password, {})
         models = xmlrpc.client.ServerProxy('{}/xmlrpc/2/object'.format(url))
-        order = models.execute_kw(db, uid, password, 'stock.picking', 'read', [[order_id]])
-        if order:
-            return JsonResponse(order[0], safe=False)
+        pick = models.execute_kw(db, uid, password, 'stock.picking', 'read', [[pick_id]])
+        if pick:
+            return JsonResponse(pick[0], safe=False)
         else:
             return JsonResponse({'error': 'Product not found'}, status=404)
     else:
@@ -244,7 +248,7 @@ def get_order_by_id(request, order_id):
     
 
 @csrf_exempt
-def change_delivery_order_state(request, order_id, new_state):
+def change_pickings_order_state(request, order_id, new_state):
     if request.method == 'POST':
         try:
             common = xmlrpc.client.ServerProxy('{}/xmlrpc/2/common'.format(url))
